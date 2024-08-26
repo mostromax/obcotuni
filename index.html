@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador de Bolsas Plásticas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Cotizador de Bolsas Plásticas</h2>
+    <label for="nombreCliente">Nombre del Cliente (opcional):</label>
+    <input type="text" id="nombreCliente">
+
+    <label for="ancho">Ancho (cm):</label>
+    <input type="number" id="ancho" min="20" max="140" required>
+
+    <label for="largo">Largo (cm):</label>
+    <input type="number" id="largo" min="30" max="160" required>
+
+    <label for="espesor">Espesor (micrones):</label>
+    <input type="number" id="espesor" min="0.015" max="0.100" step="0.001" required>
+
+    <label for="densidad">Densidad:</label>
+    <select id="densidad" onchange="actualizarMateriales()">
+        <option value="0.093">Baja Densidad (0.093)</option>
+        <option value="0.095">Alta Densidad (0.095)</option>
+    </select>
+
+    <label for="material">Material:</label>
+    <select id="material">
+        <option value="N">Negro (N)</option>
+        <option value="V B/D">Virgen Baja (V B/D)</option>
+        <option value="T1">Transparente 1ra (T1)</option>
+        <option value="T2">Transparente 2da (T2)</option>
+        <option value="Bco">Blanco (Bco)</option>
+        <option value="V A/D">Virgen Alta (V A/D)</option>
+    </select>
+
+    <label for="cantidad">Cantidad a Cotizar (unidades):</label>
+    <input type="number" id="cantidad" min="1" required>
+
+    <label for="precioKilo">Precio Venta Kilo ($):</label>
+    <input type="number" id="precioKilo" step="0.01" required>
+
+    <label for="kilosMinimos">Kilos para Orden Mínima:</label>
+    <input type="number" id="kilosMinimos" step="0.01" required>
+
+    <button onclick="calcularCotizacion()">Calcular Cotización</button>
+
+    <div class="result" id="resultado">
+        <!-- Aquí se mostrarán los resultados -->
+    </div>
+</div>
+
+<script>
+    function actualizarMateriales() {
+        const densidad = document.getElementById('densidad').value;
+        const materialSelect = document.getElementById('material');
+        materialSelect.innerHTML = '';
+
+        if (densidad == "0.093") {
+            materialSelect.innerHTML += '<option value="N">Negro (N)</option>';
+            materialSelect.innerHTML += '<option value="V B/D">Virgen Baja (V B/D)</option>';
+            materialSelect.innerHTML += '<option value="T1">Transparente 1ra (T1)</option>';
+            materialSelect.innerHTML += '<option value="T2">Transparente 2da (T2)</option>';
+            materialSelect.innerHTML += '<option value="Bco">Blanco (Bco)</option>';
+        } else if (densidad == "0.095") {
+            materialSelect.innerHTML += '<option value="V A/D">Virgen Alta (V A/D)</option>';
+        }
+    }
+
+    function calcularCotizacion() {
+        const nombreCliente = document.getElementById('nombreCliente').value;
+        const ancho = parseFloat(document.getElementById('ancho').value);
+        const largo = parseFloat(document.getElementById('largo').value);
+        const espesor = parseFloat(document.getElementById('espesor').value);
+        const densidad = parseFloat(document.getElementById('densidad').value);
+        const material = document.getElementById('material').value;
+        const cantidad = parseFloat(document.getElementById('cantidad').value);
+        const precioKilo = parseFloat(document.getElementById('precioKilo').value);
+        const kilosMinimos = parseFloat(document.getElementById('kilosMinimos').value);
+
+        // Cálculos
+        const pesoUnidad = ancho * largo * espesor * densidad * 2; // gramos
+        const pesoMetro = ancho * 100 * espesor * densidad * 2; // gramos
+        let unidadesSaco = Math.floor(20 * 1000 / pesoUnidad);
+        unidadesSaco = unidadesSaco - (unidadesSaco % 10); // Múltiplo de 10
+        const pesoSaco = unidadesSaco * pesoUnidad / 1000; // kg
+        const fuelles = ancho > 90 ? ((ancho - 90) / 2) + " cm por lado" : "No";
+        const anchoOptico = ancho > 90 ? (ancho - ((ancho - 90) / 2)) : ancho;
+        const kilosExtrusion = pesoUnidad * cantidad / 1000; // kg
+        const sacosAprox = Math.ceil(cantidad / unidadesSaco);
+        let ordenMinima = Math.ceil(kilosMinimos * 1000 / pesoUnidad);
+        ordenMinima = ordenMinima + (unidadesSaco - (ordenMinima % unidadesSaco)); // Múltiplo de us
+        const ordenMinimaSacos = Math.ceil(ordenMinima / unidadesSaco);
+        const precioUnitario = precioKilo / (1000 / pesoUnidad);
+
+        // Resultados
+        const subtotal = precioUnitario * cantidad;
+        const iva = subtotal * 0.19;
+        const total = subtotal + iva;
+
+        // Mostrar resultados
+        const resultado = `
+            <h3>Cotización</h3>
+
+	<table>
+            <p><strong>Cliente:</strong> ${nombreCliente || 'N/A'}</p>
+            <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+            <p><strong>Especificaciones:</strong> ${ancho} cm x ${largo} cm x ${espesor} micrones (${material})</p>
+	</table>
+
+            <table>
+                <tr><th>Material</th><td>${material}</td></tr>
+                <tr><th>Ancho</th><td>${ancho} cm</td></tr>
+                <tr><th>Largo</th><td>${largo} cm</td></tr>
+                <tr><th>Espesor</th><td>${espesor} micrones</td></tr>
+                <tr><th>Fuelles</th><td>${fuelles}</td></tr>
+                <tr><th>Unidades al saco</th><td>${unidadesSaco} unidades</td></tr>
+                <tr><th>Paquetes al saco</th><td>${unidadesSaco / 10} paquetes de 10 unidades</td></tr>
+                <tr><th>Orden mínima</th><td>${ordenMinima} unidades</td></tr>
+               
+            </table>
+	<table>
+		<tr><th>Cantidad</th><td>${cantidad} unidades</td></tr>
+ 		<tr><th>Sacos</th><td>${sacosAprox} sacos</td></tr>
+	</table>
+
+            <table>
+                <tr><th>Precio unitario</th><td>$${precioUnitario.toFixed(0)}</td></tr>
+                <tr><th>Subtotal Neto</th><td>$${subtotal.toFixed(0)}</td></tr>
+                <tr><th>IVA</th><td>$${iva.toFixed(0)}</td></tr>
+                <tr><th>Total</th><td>$${total.toFixed(0)}</td></tr>
+            </table>
+
+<div class="notes">
+            <h4>FABRICACIÓN A PEDIDO</h4>
+            <p>Se solicita Abono por el 50% de los trabajos para generar Orden de trabajo a Producción.</p>
+            <p>*Una vez recibido el anticipo solicitado, se genera la orden de trabajo a producción.</p>
+
+            <p><strong>Forma de Pago:</strong> 50% Abono y 50% Contraentrega.</p>
+            <p><strong>Plazo de fabricación (Estimado):</strong> 7 Días hábiles.</p>
+            <p><strong>Tolerancia en cantidad:</strong> +/- 5%;</p>
+            <p>*Ejemplo tolerancia: Si solicita 1000 unidades, estaremos entregando cantidades dentro de un rango de 950 - 1050 unidades; lo anterior es debido a la naturaleza del proceso productivo.</p>
+
+            <p><strong>Datos para Abonos:</strong></p>
+            <p>Fábrica Sabraplas SpA</p>
+            <p>RUT: 76.328.835-8</p>
+            <p>Cuenta Corriente: Banco de Chile N° 174-06320-02</p>
+            <p>*Enviar comprobante a: sabraplas@gmail.com (Importante)</p>
+        </div>
+        `;
+        document.getElementById('resultado').innerHTML = resultado;
+    }
+</script>
+
+</body>
+</html>
